@@ -12,13 +12,13 @@ import javax.swing.JOptionPane;
  * @author hw076
  *
  */
-public class TestTools {
+public class F517Tools {
 
-  private TestTools() {} //不允许其他类创建本类实例
+  private F517Tools() {} //不允许其他类创建本类实例
   
-  public static List<TestData> getAllByDB() {
+  public static List<F517Data> getAllByDB() {
     
-    List<TestData> list = new ArrayList<>();
+    List<F517Data> list = new ArrayList<>();
     String sql = "select * from f517";
     try {
       ResultSet rs = DBHelper.search(sql, null);
@@ -31,7 +31,7 @@ public class TestTools {
         String unit = rs.getString(6);
         String testResult = rs.getString(7);
         
-        list.add(new TestData(steps, testItem, upperLimit, lowerLimit, testValue, unit, testResult));
+        list.add(new F517Data(steps, testItem, upperLimit, lowerLimit, testValue, unit, testResult));
       }
     } catch (SQLException e) {
       JOptionPane.showMessageDialog(null, "测试数据表读取失败：" + e.getLocalizedMessage());

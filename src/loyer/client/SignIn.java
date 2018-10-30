@@ -101,7 +101,7 @@ public class SignIn {
     pks = new JLabel("*版权所有：广州番禺旭东阪田电子有限公司");
     pks.setBounds(0, 291, 402, 15);
     pks.setForeground(Color.GRAY);
-    pks.setFont(new Font("宋体", Font.PLAIN, 12));
+    pks.setFont(new Font("楷体", Font.PLAIN, 12));
     pks.setHorizontalAlignment(SwingConstants.RIGHT);
     frame.getContentPane().add(pks);
     

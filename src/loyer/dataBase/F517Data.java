@@ -5,7 +5,7 @@ package loyer.dataBase;
  * @author hw076
  *
  */
-public class TestData {
+public class F517Data {
 
   private String steps;
   private String testItem;
@@ -16,10 +16,10 @@ public class TestData {
   private String testResult;
   
   
-  public TestData() {
+  public F517Data() {
     super();
   }
-  public TestData(String steps, String testItem, String upperLimit, String lowerLimit, String testValue, String uint,
+  public F517Data(String steps, String testItem, String upperLimit, String lowerLimit, String testValue, String uint,
       String testResult) {
     super();
     this.steps = steps;

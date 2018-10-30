@@ -1,5 +1,6 @@
 package test;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 
 import javax.swing.JOptionPane;
@@ -7,6 +8,7 @@ import javax.swing.Timer;
 
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
+import loyer.dataBase.RecordTools;
 import loyer.exception.InputStreamCloseFail;
 import loyer.exception.NoSuchPort;
 import loyer.exception.NotASerialPort;
@@ -32,6 +34,26 @@ public class Test {
 
   public static void main(String[] args) throws SerialPortParamFail, NotASerialPort, NoSuchPort, PortInUse, SendToPortFail, OutputStreamCloseFail, TooManyListeners, InterruptedException {
 
+    byte b = 1;
+    b &= ~(1<<0);
+    b |= (1<<1);
+    System.out.println(b);
+    System.out.println(String.format("0x%02x", (byte)-13));
+    //String[] str = {"F517", "3", "2", "1", "20", LocalDate.now().toString()};
+    //RecordTools.updateData(str);
+    //String[] str = {"F517", "1", "0", "1", "20", LocalDate.now().toString()};
+    //RecordTools.insertData(str);
+    /*UserData common = UserTools.getUserByID(1);
+    UserData admin = UserTools.getUserByID(2);
+    System.out.println(common.getId() + "::" + common.getUserName() + "::" + common.getPassword());
+    System.out.println(admin.getId() + "::" + admin.getUserName() + "::" + admin.getPassword());
+    
+    List<TestData> list = TestTools.getAllByDB();
+    for(TestData data : list) {
+      System.out.println(data.getTestItem() + "::" + data.getUint());
+    }//*/
+  }
+  public static void usartTest() throws SendToPortFail, OutputStreamCloseFail, SerialPortParamFail, NotASerialPort, NoSuchPort, PortInUse, TooManyListeners, InterruptedException {
     ArrayList<String> portList = SerialPortTools.findPort();
     for(String port : portList) {
       System.out.println(port);
@@ -94,15 +116,6 @@ public class Test {
     SerialPortTools.write(COM1, SerialPortTools.toByteArray(str1));
     
     while(true);
-    /*UserData common = UserTools.getUserByID(1);
-    UserData admin = UserTools.getUserByID(2);
-    System.out.println(common.getId() + "::" + common.getUserName() + "::" + common.getPassword());
-    System.out.println(admin.getId() + "::" + admin.getUserName() + "::" + admin.getPassword());
-    
-    List<TestData> list = TestTools.getAllByDB();
-    for(TestData data : list) {
-      System.out.println(data.getTestItem() + "::" + data.getUint());
-    }//*/
   }
   
 }
