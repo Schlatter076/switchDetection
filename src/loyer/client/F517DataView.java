@@ -15,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -58,7 +57,6 @@ import javax.swing.JToggleButton;
 
 public class F517DataView {
 
-  private String pwd = null;
   private JFrame frame;
   private JMenuBar menuBar;
   private JButton exitButt;
@@ -134,6 +132,7 @@ public class F517DataView {
         try {
           F517DataView window = new F517DataView();
           window.frame.setVisible(true);
+          window.addListener();
           window.initPort();
         } catch (Exception e) {
           e.printStackTrace();
@@ -155,22 +154,16 @@ public class F517DataView {
   private void initialize() {
     frame = new JFrame();
     frame.getContentPane().setBackground(new Color(245, 245, 245));
-    //窗口添加关闭事件
-    frame.addWindowListener(new WindowAdapter() {
-      public void windowClosing(WindowEvent e) {
-        close();
-      }
-    });
     frame.setTitle("F517副驾四向开关测试系统");
     Toolkit tk = Toolkit.getDefaultToolkit();
-    //size[0] = tk.getScreenSize().width;
-    //size[1] = tk.getScreenSize().height;
-    final int WIDTH = tk.getScreenSize().width;
-    final int HEIGHT = tk.getScreenSize().height;
+    size[0] = tk.getScreenSize().width;
+    size[1] = tk.getScreenSize().height;
+    //final int WIDTH = tk.getScreenSize().width;
+    //final int HEIGHT = tk.getScreenSize().height;
     
     //设置窗口大小
-    //frame.setBounds(0, 0, size[0], size[1] - 50);
-    frame.setBounds(0, 0, WIDTH, HEIGHT - 50);
+    frame.setBounds(0, 0, size[0], size[1] - 50);
+    //frame.setBounds(0, 0, WIDTH, HEIGHT - 50);
     frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
     frame.setResizable(false);   //窗口大小不可改
     //设置窗口背景透明
@@ -188,17 +181,12 @@ public class F517DataView {
     exitButt.setFont(new Font("宋体", Font.PLAIN, 14));
     menuBar.add(exitButt);
     
-    //给退出按钮添加事件
-    exitButt.addActionListener(event -> close());
-    
     resultButt = new JButton("查看测试结果(Result)");
     resultButt.setOpaque(false);
     resultButt.setBackground(new Color(245, 245, 245));
     resultButt.setForeground(Color.BLACK);
     resultButt.setFont(new Font("宋体", Font.PLAIN, 14));
     menuBar.add(resultButt);
-    //添加事件
-    resultButt.addActionListener(event -> JOptionPane.showMessageDialog(null, resultButt.getText()));
     
     toolsButt = new JButton("调试工具(Tools)");
     toolsButt.setOpaque(false);
@@ -206,20 +194,6 @@ public class F517DataView {
     toolsButt.setForeground(Color.BLACK);
     toolsButt.setFont(new Font("宋体", Font.PLAIN, 14));
     menuBar.add(toolsButt);
-    //打开串口调试工具
-    toolsButt.addActionListener(event -> {
-      if(COM1 != null) {
-        SerialPortTools.closePort(COM1);
-        COM1 = null;
-        com1Butt.setSelected(false);
-      }
-      if(COM2 != null) {
-        SerialPortTools.closePort(COM2);
-        COM2 = null;
-        com2Butt.setSelected(false);
-      }
-      UsartTools.getUsartTools();
-    });
     
     helpButt = new JButton("帮助(H)");
     helpButt.setOpaque(false);
@@ -229,30 +203,15 @@ public class F517DataView {
     menuBar.add(helpButt);
     
     com1Butt = new JToggleButton("COM1");
-    com1Butt.addActionListener(e -> {
-      if(COM1 == null) {  //如果串口1被关闭了
-        initCOM1();
-      }
-      else
-        com1Butt.setSelected(true);
-    });
     com1Butt.setBackground(new Color(245, 245, 245));
     com1Butt.setFont(new Font("宋体", Font.PLAIN, 14));
     menuBar.add(com1Butt);
     
     com2Butt = new JToggleButton("COM2");
-    com2Butt.addActionListener(e -> {
-      if(COM2 == null) {
-        initCOM2();
-      }
-      else
-        com2Butt.setSelected(true);
-    });
     com2Butt.setBackground(new Color(245, 245, 245));
     com2Butt.setFont(new Font("宋体", Font.PLAIN, 14));
     menuBar.add(com2Butt);
-    //打开帮助页面
-    helpButt.addActionListener(event -> HelpPanel.getHelpPanel());
+    
     frame.getContentPane().setLayout(new BorderLayout(0, 0));
     
     timeLabel = new JLabel("yyyy-MM-dd   HH:mm:ss     ");
@@ -273,15 +232,14 @@ public class F517DataView {
     myPieChart = new MyPieChart(okCount, ngCount);
     chartPanel = myPieChart.getChartPanel();
     chartPanel.setOpaque(false);
-    //chartPanel.setBounds(size[0]*2/3, size[1]/8, size[0]/3 - 10, size[1]/2);
-    chartPanel.setBounds(WIDTH*2/3, HEIGHT/8, WIDTH/3 - 10, HEIGHT/2);
+    chartPanel.setBounds(size[0]*2/3, size[1]/8, size[0]/3 - 10, size[1]/2);
+    //chartPanel.setBounds(WIDTH*2/3, HEIGHT/8, WIDTH/3 - 10, HEIGHT/2);
     dataPanel.add(chartPanel);
-    setPieChart(10, 5);
     dataPanel.setLayout(null);
     //测试结果显示框
     sumField = new JTextField();
-    //sumField.setBounds(size[0]/30, 32, size[0]/10, 50);
-    sumField.setBounds(WIDTH/30, 35, WIDTH/10, 50);
+    sumField.setBounds(size[0]/30, 35, size[0]/10, 50);
+    //sumField.setBounds(WIDTH/30, 35, WIDTH/10, 50);
     sumField.setEditable(false);
     sumField.setForeground(new Color(0, 0, 0));
     sumField.setHorizontalAlignment(SwingConstants.CENTER);
@@ -291,15 +249,15 @@ public class F517DataView {
     sumField.setColumns(10);
     
     sumLabel = new JLabel("测试总数(PCS)：");
-    //sumLabel.setBounds(size[0]/30, 10, size[0]/10, 15);
-    sumLabel.setBounds(WIDTH/30, 15, WIDTH/10, 15);
+    sumLabel.setBounds(size[0]/30, 15, size[0]/10, 15);
+    //sumLabel.setBounds(WIDTH/30, 15, WIDTH/10, 15);
     sumLabel.setForeground(new Color(0, 0, 0));
     sumLabel.setFont(new Font("等线", Font.BOLD, 16));
     dataPanel.add(sumLabel);
     
     okField = new JTextField();
-    //okField.setBounds(size[0]*5/30, 32, size[0]/10, 50);
-    okField.setBounds(WIDTH*5/30, 35, WIDTH/10, 50);
+    okField.setBounds(size[0]*5/30, 35, size[0]/10, 50);
+    //okField.setBounds(WIDTH*5/30, 35, WIDTH/10, 50);
     okField.setHorizontalAlignment(SwingConstants.CENTER);
     okField.setForeground(new Color(50, 205, 50));
     okField.setFont(new Font("Times New Roman", Font.PLAIN, 50));
@@ -309,15 +267,15 @@ public class F517DataView {
     dataPanel.add(okField);
     
     okLabel = new JLabel("OK：");
-    //okLabel.setBounds(size[0]*5/30, 10, size[0]/10, 15);
-    okLabel.setBounds(WIDTH*5/30, 15, WIDTH/10, 15);
+    okLabel.setBounds(size[0]*5/30, 15, size[0]/10, 15);
+    //okLabel.setBounds(WIDTH*5/30, 15, WIDTH/10, 15);
     okLabel.setForeground(new Color(0, 0, 0));
     okLabel.setFont(new Font("等线", Font.BOLD, 16));
     dataPanel.add(okLabel);
     
     ngField = new JTextField();
-    //ngField.setBounds(size[0]*9/30, 32, size[0]/10, 50);
-    ngField.setBounds(WIDTH*9/30, 35, WIDTH/10, 50);
+    ngField.setBounds(size[0]*9/30, 35, size[0]/10, 50);
+    //ngField.setBounds(WIDTH*9/30, 35, WIDTH/10, 50);
     ngField.setHorizontalAlignment(SwingConstants.CENTER);
     ngField.setForeground(new Color(255, 0, 0));
     ngField.setFont(new Font("Times New Roman", Font.PLAIN, 50));
@@ -327,15 +285,15 @@ public class F517DataView {
     dataPanel.add(ngField);
     
     ngLabel = new JLabel("NG：");
-    //ngLabel.setBounds(size[0]*9/30, 10, size[0]/10, 15);
-    ngLabel.setBounds(WIDTH*9/30, 15, WIDTH/10, 15);
+    ngLabel.setBounds(size[0]*9/30, 15, size[0]/10, 15);
+    //ngLabel.setBounds(WIDTH*9/30, 15, WIDTH/10, 15);
     ngLabel.setForeground(new Color(0, 0, 0));
     ngLabel.setFont(new Font("等线", Font.BOLD, 16));
     dataPanel.add(ngLabel);
     
     timeField = new JTextField();
-    //timeField.setBounds(size[0]*13/30, 32, size[0]/10, 50);
-    timeField.setBounds(WIDTH*13/30, 35, WIDTH/10, 50);
+    timeField.setBounds(size[0]*13/30, 35, size[0]/10, 50);
+    //timeField.setBounds(WIDTH*13/30, 35, WIDTH/10, 50);
     timeField.setHorizontalAlignment(SwingConstants.CENTER);
     timeField.setForeground(new Color(128, 0, 128));
     timeField.setFont(new Font("Times New Roman", Font.PLAIN, 50));
@@ -345,15 +303,15 @@ public class F517DataView {
     dataPanel.add(timeField);
     
     tLabel = new JLabel("测试时间(S)：");
-    //tLabel.setBounds(size[0]*13/30, 10, size[0]/10, 15);
-    tLabel.setBounds(WIDTH*13/30, 15, WIDTH/10, 15);
+    tLabel.setBounds(size[0]*13/30, 15, size[0]/10, 15);
+    //tLabel.setBounds(WIDTH*13/30, 15, WIDTH/10, 15);
     tLabel.setForeground(new Color(0, 0, 0));
     tLabel.setFont(new Font("等线", Font.BOLD, 16));
     dataPanel.add(tLabel);
     
     typeField = new JTextField();
-    //typeField.setBounds(size[0]/30, size[1]*5/8+75, size[0]*19/60, 60);
-    typeField.setBounds(WIDTH/30, HEIGHT*5/8+75, WIDTH*19/60, 60);
+    typeField.setBounds(size[0]/30, size[1]*5/8+75, size[0]*19/60, 60);
+    //typeField.setBounds(WIDTH/30, HEIGHT*5/8+75, WIDTH*19/60, 60);
     typeField.setText("F517副驾四向");
     typeField.setHorizontalAlignment(SwingConstants.LEFT);
     typeField.setForeground(new Color(0, 0, 139));
@@ -364,35 +322,23 @@ public class F517DataView {
     dataPanel.add(typeField);
     
     typeLabel = new JLabel("当前机种：");
-    //typeLabel.setBounds(size[0]/30, size[1]*5/8+50, size[0]*19/60, 15);
-    typeLabel.setBounds(WIDTH/30, HEIGHT*5/8+50, WIDTH*19/60, 15);
+    typeLabel.setBounds(size[0]/30, size[1]*5/8+50, size[0]*19/60, 15);
+    //typeLabel.setBounds(WIDTH/30, HEIGHT*5/8+50, WIDTH*19/60, 15);
     typeLabel.setForeground(new Color(0, 0, 0));
     typeLabel.setFont(new Font("等线", Font.BOLD, 16));
     dataPanel.add(typeLabel);
     
     statuButt = new JButton("STOP");
-    statuButt.addActionListener(e -> {
-      if(statuButt.getText().equals("STOP")) {
-        statuButt.setText("RUN");
-        timer2.start();
-      }
-      else {
-        statuButt.setText("STOP");
-        timer2.stop();
-        progressBar.setValue(0);
-      }
-      
-    });
-    //statuButt.setBounds(size[0]*22/60, size[1]*5/8+75, size[0]*10/60, 60);
-    statuButt.setBounds(WIDTH*22/60, HEIGHT*5/8+75, WIDTH*10/60, 60);
+    statuButt.setBounds(size[0]*22/60, size[1]*5/8+75, size[0]*10/60, 60);
+    //statuButt.setBounds(WIDTH*22/60, HEIGHT*5/8+75, WIDTH*10/60, 60);
     statuButt.setFont(new Font("宋体", Font.BOLD | Font.ITALIC, 60));
     statuButt.setForeground(new Color(0, 0, 0));
     statuButt.setBackground(new Color(255, 255, 0));
     dataPanel.add(statuButt);
     
     statuLabel = new JLabel("运行状态/测试结果：");
-    //statuLabel.setBounds(size[0]*22/60, size[1]*5/8+50, size[0]*10/60, 15);
-    statuLabel.setBounds(WIDTH*22/60, HEIGHT*5/8+50, WIDTH*10/60, 15);
+    statuLabel.setBounds(size[0]*22/60, size[1]*5/8+50, size[0]*10/60, 15);
+    //statuLabel.setBounds(WIDTH*22/60, HEIGHT*5/8+50, WIDTH*10/60, 15);
     statuLabel.setForeground(new Color(0, 0, 0));
     statuLabel.setFont(new Font("等线", Font.BOLD, 16));
     dataPanel.add(statuLabel);
@@ -402,62 +348,35 @@ public class F517DataView {
     scrollPane = new JScrollPane(table);
     scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
     scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
-    //scrollPane.setBounds(size[0]/30, size[1]/8, size[0]/2, size[1]/2);
-    scrollPane.setBounds(WIDTH/30, HEIGHT/8, WIDTH/2, HEIGHT/2);
+    scrollPane.setBounds(size[0]/30, size[1]/8, size[0]/2, size[1]/2);
+    //scrollPane.setBounds(WIDTH/30, HEIGHT/8, WIDTH/2, HEIGHT/2);
     scrollPane.setOpaque(false);
     scrollPane.getViewport().setOpaque(false);
     dataPanel.add(scrollPane);
     
     lblpks = new JLabel("*版权所有：广州番禺旭东阪田电子有限公司(PKS)");
-    //lblpks.setBounds(size[0]/30, size[1]*5/8 + 5, size[0]/2, 15);
-    lblpks.setBounds(WIDTH/30, HEIGHT*5/8 + 5, WIDTH/2, 15);
+    lblpks.setBounds(size[0]/30, size[1]*5/8 + 5, size[0]/2, 15);
+    //lblpks.setBounds(WIDTH/30, HEIGHT*5/8 + 5, WIDTH/2, 15);
     lblpks.setHorizontalAlignment(SwingConstants.LEFT);
     lblpks.setForeground(Color.GRAY);
     lblpks.setFont(new Font("楷体", Font.PLAIN, 12));
     dataPanel.add(lblpks);
     
     nayin = new JCheckBox("捺印");
-    nayin.addActionListener(e -> {
-      // 由于要触发事件，复选框状态定会改变，故而多加了判断
-      JPasswordField pw = new JPasswordField();
-      pw.setEchoChar('*');
-      JOptionPane.showMessageDialog(null, pw, "请输入捺印密码", JOptionPane.PLAIN_MESSAGE);
-      char[] pass = pw.getPassword();
-      if (pass.length > 0 && pass.length <= 6) {
-        if (String.valueOf(pass).equals("NY2018")) {
-          if (nayin.isSelected()) {
-            nayin.setSelected(true);
-          } else
-            nayin.setSelected(false);
-        } else {
-          JOptionPane.showMessageDialog(null, "密码错误！");
-          if (nayin.isSelected()) {
-            nayin.setSelected(false);
-          } else
-            nayin.setSelected(true);
-        }
-      } else {
-        JOptionPane.showMessageDialog(null, "密码长度为6位！");
-        if (nayin.isSelected()) {
-          nayin.setSelected(false);
-        } else
-          nayin.setSelected(true);
-      }
-    });
     nayin.setSelected(true);
     nayin.setBackground(new Color(245, 245, 245));
     nayin.setForeground(new Color(0, 0, 255));
     nayin.setFont(new Font("宋体", Font.PLAIN, 20));
-    //nayin.setBounds(size[0]*2/3 + 5, size[1]*5/8+75, 100, 40);
-    nayin.setBounds(WIDTH*2/3 + 5, HEIGHT*5/8+75, 100, 40);
+    nayin.setBounds(size[0]*2/3 + 5, size[1]*5/8+75, 100, 40);
+    //nayin.setBounds(WIDTH*2/3 + 5, HEIGHT*5/8+75, 100, 40);
     dataPanel.add(nayin);
     
     spotTest = new JCheckBox("点测");
     spotTest.setForeground(new Color(0, 0, 255));
     spotTest.setFont(new Font("宋体", Font.PLAIN, 20));
     spotTest.setBackground(new Color(245, 245, 245));
-    //spotTest.setBounds(size[0]*2/3 + 105, size[1]*5/8+75, 100, 40);
-    spotTest.setBounds(WIDTH*2/3 + 105, HEIGHT*5/8+75, 100, 40);
+    spotTest.setBounds(size[0]*2/3 + 105, size[1]*5/8+75, 100, 40);
+    //spotTest.setBounds(WIDTH*2/3 + 105, HEIGHT*5/8+75, 100, 40);
     dataPanel.add(spotTest);
     
     text_1 = new JTextField();
@@ -467,8 +386,8 @@ public class F517DataView {
     text_1.setFont(new Font("宋体", Font.PLAIN, 14));
     text_1.setForeground(new Color(0, 0, 0));
     text_1.setHorizontalAlignment(SwingConstants.CENTER);
-    //text_1.setBounds(size[0]*17/30, size[1]/8, size[0]/15, size[1]*2/64);
-    text_1.setBounds(WIDTH*17/30, HEIGHT/8, WIDTH/15, HEIGHT*2/64);
+    text_1.setBounds(size[0]*17/30, size[1]/8, size[0]/15, size[1]*2/64);
+    //text_1.setBounds(WIDTH*17/30, HEIGHT/8, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_1);
     text_1.setColumns(10);
     
@@ -480,8 +399,8 @@ public class F517DataView {
     text_2.setFont(new Font("宋体", Font.PLAIN, 14));
     text_2.setEditable(false);
     text_2.setColumns(10);
-    //text_2.setBounds(size[0]*17/30, size[1]*11/64, size[0]/15, size[1]*2/64);
-    text_2.setBounds(WIDTH*17/30, HEIGHT*11/64, WIDTH/15, HEIGHT*2/64);
+    text_2.setBounds(size[0]*17/30, size[1]*11/64, size[0]/15, size[1]*2/64);
+    //text_2.setBounds(WIDTH*17/30, HEIGHT*11/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_2);
     
     text_3 = new JTextField();
@@ -492,8 +411,8 @@ public class F517DataView {
     text_3.setFont(new Font("宋体", Font.PLAIN, 14));
     text_3.setEditable(false);
     text_3.setColumns(10);
-    //text_3.setBounds(size[0]*17/30, size[1]*14/64, size[0]/15, size[1]*2/64);
-    text_3.setBounds(WIDTH*17/30, HEIGHT*14/64, WIDTH/15, HEIGHT*2/64);
+    text_3.setBounds(size[0]*17/30, size[1]*14/64, size[0]/15, size[1]*2/64);
+    //text_3.setBounds(WIDTH*17/30, HEIGHT*14/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_3);
     
     text_4 = new JTextField();
@@ -504,8 +423,8 @@ public class F517DataView {
     text_4.setFont(new Font("宋体", Font.PLAIN, 14));
     text_4.setEditable(false);
     text_4.setColumns(10);
-    //text_4.setBounds(size[0]*17/30, size[1]*17/64, size[0]/15, size[1]*2/64);
-    text_4.setBounds(WIDTH*17/30, HEIGHT*17/64, WIDTH/15, HEIGHT*2/64);
+    text_4.setBounds(size[0]*17/30, size[1]*17/64, size[0]/15, size[1]*2/64);
+    //text_4.setBounds(WIDTH*17/30, HEIGHT*17/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_4);
     
     text_5 = new JTextField();
@@ -516,8 +435,8 @@ public class F517DataView {
     text_5.setFont(new Font("宋体", Font.PLAIN, 14));
     text_5.setEditable(false);
     text_5.setColumns(10);
-    //text_5.setBounds(size[0]*17/30, size[1]*20/64, size[0]/15, size[1]*2/64);
-    text_5.setBounds(WIDTH*17/30, HEIGHT*20/64, WIDTH/15, HEIGHT*2/64);
+    text_5.setBounds(size[0]*17/30, size[1]*20/64, size[0]/15, size[1]*2/64);
+    //text_5.setBounds(WIDTH*17/30, HEIGHT*20/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_5);
     
     text_6 = new JTextField();
@@ -528,8 +447,8 @@ public class F517DataView {
     text_6.setFont(new Font("宋体", Font.PLAIN, 14));
     text_6.setEditable(false);
     text_6.setColumns(10);
-    //text_6.setBounds(size[0]*17/30, size[1]*23/64, size[0]/15, size[1]*2/64);
-    text_6.setBounds(WIDTH*17/30, HEIGHT*23/64, WIDTH/15, HEIGHT*2/64);
+    text_6.setBounds(size[0]*17/30, size[1]*23/64, size[0]/15, size[1]*2/64);
+    //text_6.setBounds(WIDTH*17/30, HEIGHT*23/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_6);
     
     text_7 = new JTextField();
@@ -540,8 +459,8 @@ public class F517DataView {
     text_7.setFont(new Font("宋体", Font.PLAIN, 14));
     text_7.setEditable(false);
     text_7.setColumns(10);
-    //text_7.setBounds(size[0]*17/30, size[1]*26/64, size[0]/15, size[1]*2/64);
-    text_7.setBounds(WIDTH*17/30, HEIGHT*26/64, WIDTH/15, HEIGHT*2/64);
+    text_7.setBounds(size[0]*17/30, size[1]*26/64, size[0]/15, size[1]*2/64);
+    //text_7.setBounds(WIDTH*17/30, HEIGHT*26/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_7);
     
     text_8 = new JTextField();
@@ -552,8 +471,8 @@ public class F517DataView {
     text_8.setFont(new Font("宋体", Font.PLAIN, 14));
     text_8.setEditable(false);
     text_8.setColumns(10);
-    //text_8.setBounds(size[0]*17/30, size[1]*29/64, size[0]/15, size[1]*2/64);
-    text_8.setBounds(WIDTH*17/30, HEIGHT*29/64, WIDTH/15, HEIGHT*2/64);
+    text_8.setBounds(size[0]*17/30, size[1]*29/64, size[0]/15, size[1]*2/64);
+    //text_8.setBounds(WIDTH*17/30, HEIGHT*29/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_8);
     
     text_9 = new JTextField();
@@ -564,8 +483,8 @@ public class F517DataView {
     text_9.setFont(new Font("宋体", Font.PLAIN, 14));
     text_9.setEditable(false);
     text_9.setColumns(10);
-    //text_9.setBounds(size[0]*17/30, size[1]*32/64, size[0]/15, size[1]*2/64);
-    text_9.setBounds(WIDTH*17/30, HEIGHT*32/64, WIDTH/15, HEIGHT*2/64);
+    text_9.setBounds(size[0]*17/30, size[1]*32/64, size[0]/15, size[1]*2/64);
+    //text_9.setBounds(WIDTH*17/30, HEIGHT*32/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_9);
     
     text_10 = new JTextField();
@@ -576,8 +495,8 @@ public class F517DataView {
     text_10.setFont(new Font("宋体", Font.PLAIN, 14));
     text_10.setEditable(false);
     text_10.setColumns(10);
-    //text_10.setBounds(size[0]*17/30, size[1]*35/64, size[0]/15, size[1]*2/64);
-    text_10.setBounds(WIDTH*17/30, HEIGHT*35/64, WIDTH/15, HEIGHT*2/64);
+    text_10.setBounds(size[0]*17/30, size[1]*35/64, size[0]/15, size[1]*2/64);
+    //text_10.setBounds(WIDTH*17/30, HEIGHT*35/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_10);
     
     text_11 = new JTextField();
@@ -588,16 +507,16 @@ public class F517DataView {
     text_11.setFont(new Font("宋体", Font.PLAIN, 14));
     text_11.setEditable(false);
     text_11.setColumns(10);
-    //text_11.setBounds(size[0]*17/30, size[1]*38/64, size[0]/15, size[1]*2/64);
-    text_11.setBounds(WIDTH*17/30, HEIGHT*38/64, WIDTH/15, HEIGHT*2/64);
+    text_11.setBounds(size[0]*17/30, size[1]*38/64, size[0]/15, size[1]*2/64);
+    //text_11.setBounds(WIDTH*17/30, HEIGHT*38/64, WIDTH/15, HEIGHT*2/64);
     dataPanel.add(text_11);
     
     JLabel picture = new JLabel("广州番禺旭东阪田电子有限公司(PKS)");
     picture.setFont(new Font("楷体", Font.BOLD, 20));
     ImageIcon img = new ImageIcon(this.getClass().getResource("/Kyokuto.png"));
     picture.setIcon(img);
-    //picture.setBounds(size[0]*2/3, 35, size[0]/3 - 10, 50);
-    picture.setBounds(WIDTH*2/3, 35, WIDTH/3 - 10, 50);
+    picture.setBounds(size[0]*2/3, 35, size[0]/3 - 10, 50);
+    //picture.setBounds(WIDTH*2/3, 35, WIDTH/3 - 10, 50);
     dataPanel.add(picture);
     
     initCountAndPieChart();
@@ -615,7 +534,7 @@ public class F517DataView {
       if(progressValue > 100) progressValue = 0;
       timeCount += 20;
       timeField.setText(calculate(timeCount));
-      flushText();
+      if(hasData) flushText();
     });
     //timer2.start();
   }
@@ -835,7 +754,7 @@ public class F517DataView {
       }
       com2Butt.setSelected(true);
       try {
-        SerialPortTools.add(COM1, arg0 -> {
+        SerialPortTools.add(COM2, arg0 -> {
           switch (arg0.getEventType()) {
           case SerialPortEvent.BI:  //10 通讯中断
           case SerialPortEvent.OE:  // 7 溢位（溢出）错误
@@ -850,6 +769,7 @@ public class F517DataView {
             break;
           case SerialPortEvent.DATA_AVAILABLE: {
             //有数据到达
+            
           }
             break;
           }
@@ -864,105 +784,101 @@ public class F517DataView {
     }
   }
   /**
+   * 给各个组件添加事件
+   */
+  public void addListener() {
+    //窗口添加关闭事件
+    frame.addWindowListener(new WindowAdapter() {
+      public void windowClosing(WindowEvent e) {
+        close();
+      }
+    });
+    //给退出按钮添加事件
+    exitButt.addActionListener(event -> close());
+    //测试结果查看事件
+    resultButt.addActionListener(event -> ResultViewTools.getResultView());
+    //打开串口调试工具事件
+    toolsButt.addActionListener(event -> {
+      if(COM1 != null) {
+        SerialPortTools.closePort(COM1);
+        COM1 = null;
+        com1Butt.setSelected(false);
+      }
+      if(COM2 != null) {
+        SerialPortTools.closePort(COM2);
+        COM2 = null;
+        com2Butt.setSelected(false);
+      }
+      UsartTools.getUsartTools();
+    });
+    //串口1按钮事件
+    com1Butt.addActionListener(e -> {
+      if(COM1 == null) {  //如果串口1被关闭了
+        initCOM1();
+      }
+      else
+        com1Butt.setSelected(true);
+    });
+    //串口2按钮事件
+    com2Butt.addActionListener(e -> {
+      if(COM2 == null) {
+        initCOM2();
+      }
+      else
+        com2Butt.setSelected(true);
+    });
+    //打开帮助页面事件
+    helpButt.addActionListener(event -> HelpPanel.getHelpPanel());
+    //状态按钮事件
+    statuButt.addActionListener(e -> {
+      if(statuButt.getText().equals("STOP")) {
+        statuButt.setText("RUN");
+        timer2.start();
+      }
+      else {
+        statuButt.setText("STOP");
+        timer2.stop();
+        progressBar.setValue(0);
+      }
+      
+    });
+    //捺印事件
+    nayin.addActionListener(e -> {
+      // 由于要触发事件，复选框状态定会改变，故而多加了判断
+      JPasswordField pw = new JPasswordField();
+      pw.setEchoChar('*');
+      JOptionPane.showMessageDialog(null, pw, "请输入捺印密码", JOptionPane.PLAIN_MESSAGE);
+      char[] pass = pw.getPassword();
+      if (pass.length > 0 && pass.length <= 6) {
+        if (String.valueOf(pass).equals("NY2018")) {
+          if (nayin.isSelected()) {
+            nayin.setSelected(true);
+          } else
+            nayin.setSelected(false);
+        } else {
+          JOptionPane.showMessageDialog(null, "密码错误！");
+          if (nayin.isSelected()) {
+            nayin.setSelected(false);
+          } else
+            nayin.setSelected(true);
+        }
+      } else {
+        JOptionPane.showMessageDialog(null, "密码长度为6位！");
+        if (nayin.isSelected()) {
+          nayin.setSelected(false);
+        } else
+          nayin.setSelected(true);
+      }
+    });
+    
+    
+  }
+  /**
    * 初始化串口
    */
   public void initPort() {
     initCOM1();
-    initCOM2();
-    /*
-    ArrayList<String> portList = SerialPortTools.findPort();
-    if(portList.contains("COM1") && COM1 == null) {
-      try {
-        COM1 = SerialPortTools.getPort(1);
-      } catch (SerialPortParamFail | NotASerialPort | NoSuchPort | PortInUse e) {
-        JOptionPane.showMessageDialog(null, "COM1:" + e.toString());
-      }
-      com1Butt.setSelected(true);
-      try {
-        SerialPortTools.add(COM1, arg0 -> {
-          switch (arg0.getEventType()) {
-          case SerialPortEvent.BI:  //10 通讯中断
-          case SerialPortEvent.OE:  // 7 溢位（溢出）错误
-          case SerialPortEvent.FE:  // 9 帧错误
-          case SerialPortEvent.PE:  // 8 奇偶校验错误
-          case SerialPortEvent.CD:  // 6 载波检测
-          case SerialPortEvent.CTS:  // 3 清除待发送数据
-          case SerialPortEvent.DSR:  // 4 待发送数据准备好了
-          case SerialPortEvent.RI:  // 5 振铃指示
-          case SerialPortEvent.OUTPUT_BUFFER_EMPTY:  // 2 输出缓冲区已清空
-            JOptionPane.showMessageDialog(null, "COM1错误：" + arg0.toString());
-            break;
-          case SerialPortEvent.DATA_AVAILABLE: {
-            try {
-              data = SerialPortTools.read_byte(COM1);
-            } catch (ReadDataFromSerialFail e) {
-              JOptionPane.showMessageDialog(null, "COM1:" + e.toString());
-            } catch (InputStreamCloseFail e) {
-              JOptionPane.showMessageDialog(null, "COM1:" + e.toString());
-            }
-            bytes[rxCounter] = data;
-            rxCounter++;
-            switch(rxCounter) {
-            case 1:
-              if(data != FIRST_TEXT)  rxCounter = 0;
-              break;
-            case 2:
-              if(data != SECOND_TEXT) rxCounter = 0;
-              break;
-            case 11:
-              rxCounter = 0;
-              if(data == END_TEXT)  hasData = true;
-              break;
-            default:break;
-            }
-          }
-            break;
-          }
-        });
-      } catch (TooManyListeners e) {
-        JOptionPane.showMessageDialog(null, "COM1:" + e.toString());
-      }
-    }
-    else {
-      JOptionPane.showMessageDialog(null, "未发现串口1！");
-      com1Butt.setSelected(false);
-    }
-    if(portList.contains("COM2") && COM2 == null) {
-      try {
-        COM2 = SerialPortTools.getPort(2);
-      } catch (SerialPortParamFail | NotASerialPort | NoSuchPort | PortInUse e) {
-        JOptionPane.showMessageDialog(null, "COM2:" + e.toString());
-      }
-      com2Butt.setSelected(true);
-      try {
-        SerialPortTools.add(COM1, arg0 -> {
-          switch (arg0.getEventType()) {
-          case SerialPortEvent.BI:  //10 通讯中断
-          case SerialPortEvent.OE:  // 7 溢位（溢出）错误
-          case SerialPortEvent.FE:  // 9 帧错误
-          case SerialPortEvent.PE:  // 8 奇偶校验错误
-          case SerialPortEvent.CD:  // 6 载波检测
-          case SerialPortEvent.CTS:  // 3 清除待发送数据
-          case SerialPortEvent.DSR:  // 4 待发送数据准备好了
-          case SerialPortEvent.RI:  // 5 振铃指示
-          case SerialPortEvent.OUTPUT_BUFFER_EMPTY:  // 2 输出缓冲区已清空
-            JOptionPane.showMessageDialog(null, "COM2错误：" + arg0.toString());
-            break;
-          case SerialPortEvent.DATA_AVAILABLE: {
-            //有数据到达
-          }
-            break;
-          }
-        });
-      } catch (TooManyListeners e) {
-        JOptionPane.showMessageDialog(null, "COM2:" + e.toString());
-      }
-    }
-    else {
-      JOptionPane.showMessageDialog(null, "未发现串口2！");
-      com2Butt.setSelected(false);
-    }  
-    //*/    
+    initCOM2();   
   }
   /**
    * 计算测试时间显示
@@ -996,6 +912,10 @@ public class F517DataView {
     int num = JOptionPane.showConfirmDialog(null, "确认退出系统？", "提示", JOptionPane.YES_NO_OPTION);
     //如果确认键按下
     if(num == JOptionPane.YES_OPTION) {
+      SerialPortTools.closePort(COM1);
+      SerialPortTools.closePort(COM2);
+      timer1.stop();
+      timer2.stop();
       System.exit(0);
     }
   }

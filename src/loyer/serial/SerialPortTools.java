@@ -280,7 +280,7 @@ public class SerialPortTools implements SerialPortEventListener {
     return byteArray;
   }
   public static String bytesToHex(byte[] bytes) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < bytes.length; i++) {
       String hex = Integer.toHexString(bytes[i] & 0xFF);
       if (hex.length() < 2) {
