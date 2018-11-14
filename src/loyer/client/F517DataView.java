@@ -14,7 +14,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
-
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -28,8 +27,12 @@ import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -44,6 +47,8 @@ import loyer.dataBase.F517Data;
 import loyer.dataBase.F517Tools;
 import loyer.dataBase.RecordData;
 import loyer.dataBase.RecordTools;
+import loyer.dataBase.UserData;
+import loyer.dataBase.UserTools;
 import loyer.exception.InputStreamCloseFail;
 import loyer.exception.NoSuchPort;
 import loyer.exception.NotASerialPort;
@@ -52,11 +57,13 @@ import loyer.exception.ReadDataFromSerialFail;
 import loyer.exception.SerialPortParamFail;
 import loyer.exception.TooManyListeners;
 import loyer.serial.SerialPortTools;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.JToggleButton;
 
 public class F517DataView {
 
+  /**初始化密码，避免空指针异常*/
+  private String passWord = "123456";
+  private UserData admin;
+  private UserData ny;
   private JFrame frame;
   private JMenuBar menuBar;
   private JButton exitButt;
@@ -107,25 +114,54 @@ public class F517DataView {
   private JTextField text_10;
   private JTextField text_11;
   private MyTableCellRenderer myRenderer;
-  
+  /**串口列表*/
   private ArrayList<String> portList = SerialPortTools.findPort();
+  /**单片机返回数据起始字节1*/
   private static final byte FIRST_TEXT = (byte) 0xf3;
+  /**单片机返回数据起始字节2*/
   private static final byte SECOND_TEXT = (byte) 0xf4;
+  /**单片机返回数据结束字节*/
   private static final byte END_TEXT = 0x0a;
+  /**单片机接收缓冲区大小*/
   private static final int BUFFER_SIZE = 11;
+  /**单片机接收字节数组*/
   private static byte[] bytes = new byte[BUFFER_SIZE];
+  /**单片机串口接收单个字节*/
   private static byte data = 0;
+  /**单片机串口接收计数器*/
   private static int rxCounter = 0;
+  /**单片机接收完整数据包标志位*/
   private static boolean hasData = false;
   private SerialPort COM1;
   private SerialPort COM2;
   private JToggleButton com1Butt;
   private JToggleButton com2Butt;
+  /**电压表返回数据起始字节1*/
+  private static final byte VFIRST_TEXT = (byte) 0xaa;
+  /**电压表返回数据起始字节2*/
+  private static final byte VSECOND_TEXT = 0x55;
+  /**电压表返回数据校验字节*/
+  private static int sum = 0;
+  /**电压表返回数据校验和高位*/
+  private static byte sumH = 0;
+  /**电压表返回数据校验和低位*/
+  private static byte sumL = 0;
+  /**电压表接收缓冲区大小*/
+  private static final int VBUFFER_SIZE = 20;
+  /**电压表接收字节数组*/
+  private static byte[] vBytes = new byte[VBUFFER_SIZE];
+  /**电压表接收单个字节*/
+  private static byte vData = 0;
+  /**电压表返回指令部分总长度*/
+  private static int vLEN = 0;
+  /**电压表接收字节计数器*/
+  private static int vRxCounter = 0;
+  /**电压表接收完整数据包标志位*/
+  private static boolean vHasData = false;
+  /**电压表校验和累加临时数据*/
+  private static int vTemp= 0;
   
   
-  /**
-   * Launch the application.
-   */
   public static void main(String[] args) {
     EventQueue.invokeLater(new Runnable() {
       public void run() {
@@ -140,18 +176,44 @@ public class F517DataView {
       }
     });
   }
-
-  /**
-   * Create the application.
-   */
   public F517DataView() {
     initialize();
+  }//*/
+  /**
+   * 获取主测试页面
+   * @param pwd  接收登录页面的密码
+   */
+  public static void getF517DataView(String pwd) {
+    EventQueue.invokeLater(new Runnable() {
+      public void run() {
+        try {
+          F517DataView window = new F517DataView(pwd);
+          window.frame.setVisible(true);
+          window.addListener();
+          window.initPort();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    });
   }
-
+  public F517DataView(String pwd) {
+    this.passWord = pwd;
+    initialize();
+  }
+  
   /**
    * Initialize the contents of the frame.
    */
   private void initialize() {
+    /*
+    try {
+      //将界面风格设置成和系统一置
+      UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+    } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+      JOptionPane.showMessageDialog(null, e.getLocalizedMessage());
+    }//*/
+    
     frame = new JFrame();
     frame.getContentPane().setBackground(new Color(245, 245, 245));
     frame.setTitle("F517副驾四向开关测试系统");
@@ -173,6 +235,10 @@ public class F517DataView {
     //frame.setUndecorated(true);  //去掉窗口装饰
     menuBar = new JMenuBar();
     frame.setJMenuBar(menuBar);
+    
+    //从数据库加载管理员密码和捺印密码
+    admin = UserTools.getUserByID(2);
+    ny = UserTools.getUserByID(3);
     
     exitButt = new JButton("退出系统(EXIT)");
     exitButt.setOpaque(false);
@@ -707,27 +773,29 @@ public class F517DataView {
             JOptionPane.showMessageDialog(null, "COM1错误：" + arg0.toString());
             break;
           case SerialPortEvent.DATA_AVAILABLE: {
-            try {
-              data = SerialPortTools.read_byte(COM1);
-            } catch (ReadDataFromSerialFail e) {
-              JOptionPane.showMessageDialog(null, "COM1:" + e.toString());
-            } catch (InputStreamCloseFail e) {
-              JOptionPane.showMessageDialog(null, "COM1:" + e.toString());
-            }
-            bytes[rxCounter] = data;
-            rxCounter++;
-            switch(rxCounter) {
-            case 1:
-              if(data != FIRST_TEXT)  rxCounter = 0;
-              break;
-            case 2:
-              if(data != SECOND_TEXT) rxCounter = 0;
-              break;
-            case 11:
-              rxCounter = 0;
-              if(data == END_TEXT)  hasData = true;
-              break;
-            default:break;
+            if(!hasData) {
+              try {
+                data = SerialPortTools.read_byte(COM1);
+              } catch (ReadDataFromSerialFail e) {
+                JOptionPane.showMessageDialog(null, "COM1:" + e.toString());
+              } catch (InputStreamCloseFail e) {
+                JOptionPane.showMessageDialog(null, "COM1:" + e.toString());
+              }
+              bytes[rxCounter] = data;
+              rxCounter++;
+              switch(rxCounter) {
+              case 1:
+                if(data != FIRST_TEXT)  rxCounter = 0;
+                break;
+              case 2:
+                if(data != SECOND_TEXT) rxCounter = 0;
+                break;
+              case BUFFER_SIZE:
+                rxCounter = 0;
+                if(data == END_TEXT)  hasData = true;
+                break;
+              default:break;
+              }
             }
           }
             break;
@@ -769,7 +837,43 @@ public class F517DataView {
             break;
           case SerialPortEvent.DATA_AVAILABLE: {
             //有数据到达
-            
+            if(!vHasData) {
+              try {
+                vData = SerialPortTools.read_byte(COM2);
+              } catch (ReadDataFromSerialFail | InputStreamCloseFail e) {
+                JOptionPane.showMessageDialog(null, "COM2:" + e.toString());
+              }
+              vBytes[vRxCounter] = vData;
+              vRxCounter++;
+              switch(vRxCounter) {
+              case 1 : 
+                if(vData != VFIRST_TEXT) vRxCounter = 0;
+                break;
+              case 2 :
+                if(vData != VSECOND_TEXT) vRxCounter = 0;
+                break;
+              case 3 :
+                vLEN = vData;
+                break;
+              case VBUFFER_SIZE : {
+                vRxCounter = 0;
+                //校验结束字节，如果为真，则置位标志位
+                for(int i = 0; i < vLEN; i++) {
+                  vTemp = vBytes[i + 2];
+                  if(vTemp < 0)  vTemp += 256;
+                  sum += vTemp;
+                }
+                sumL = (byte) (sum & 0xff);  //取校验和低位
+                sumH = (byte) ((sum >> 8) & 0xff);  //取校验和高位
+                sum = 0;  //清零校验和
+                if(sumL == vBytes[vLEN + 3] && sumH == vBytes[vLEN + 2]) {
+                  vHasData = true;  //如果校验位没问题，则表示收到完整的数据包
+                }
+              }
+                break;
+              default:break;
+              }
+            }
           }
             break;
           }
@@ -782,6 +886,22 @@ public class F517DataView {
       JOptionPane.showMessageDialog(null, "未发现串口2！");
       com2Butt.setSelected(false);
     }
+  }
+ /**
+  * 获取串口助手
+  */
+  public void getUartTools() {
+    if(COM1 != null) {
+      SerialPortTools.closePort(COM1);
+      COM1 = null;
+      com1Butt.setSelected(false);
+    }
+    if(COM2 != null) {
+      SerialPortTools.closePort(COM2);
+      COM2 = null;
+      com2Butt.setSelected(false);
+    }
+    UsartTools.getUsartTools();
   }
   /**
    * 给各个组件添加事件
@@ -796,20 +916,48 @@ public class F517DataView {
     //给退出按钮添加事件
     exitButt.addActionListener(event -> close());
     //测试结果查看事件
-    resultButt.addActionListener(event -> ResultViewTools.getResultView());
+    resultButt.addActionListener(event -> {
+      if(this.passWord.equals(admin.getPassword())) {
+        ResultViewTools.getResultView();
+      }
+      else {
+        JPasswordField pf = new JPasswordField();
+        pf.setFont(new Font("宋体", Font.PLAIN, 17));
+        pf.setEchoChar('*');
+        JOptionPane.showMessageDialog(null, pf, "请输入管理员密码：", JOptionPane.PLAIN_MESSAGE);
+        char[] pwd = pf.getPassword();
+        if(pwd.length == 8) {
+          if(String.valueOf(pwd).equals(admin.getPassword())) {
+            ResultViewTools.getResultView();
+          }
+          else 
+            JOptionPane.showMessageDialog(null, "密码错误！");
+        }
+        else
+          JOptionPane.showMessageDialog(null, "密码长度为8位！");
+      }
+    });
     //打开串口调试工具事件
     toolsButt.addActionListener(event -> {
-      if(COM1 != null) {
-        SerialPortTools.closePort(COM1);
-        COM1 = null;
-        com1Butt.setSelected(false);
+      if(this.passWord.equals(admin.getPassword())) {
+        getUartTools();
       }
-      if(COM2 != null) {
-        SerialPortTools.closePort(COM2);
-        COM2 = null;
-        com2Butt.setSelected(false);
+      else {
+        JPasswordField pf = new JPasswordField();
+        pf.setFont(new Font("宋体", Font.PLAIN, 17));
+        pf.setEchoChar('*');
+        JOptionPane.showMessageDialog(null, pf, "请输入管理员密码：", JOptionPane.PLAIN_MESSAGE);
+        char[] pwd = pf.getPassword();
+        if(pwd.length == 8) {
+          if(String.valueOf(pwd).equals(admin.getPassword())) {
+            getUartTools();
+          }
+          else 
+            JOptionPane.showMessageDialog(null, "密码错误！");
+        }
+        else
+          JOptionPane.showMessageDialog(null, "密码长度为8位！");
       }
-      UsartTools.getUsartTools();
     });
     //串口1按钮事件
     com1Butt.addActionListener(e -> {
@@ -846,11 +994,12 @@ public class F517DataView {
     nayin.addActionListener(e -> {
       // 由于要触发事件，复选框状态定会改变，故而多加了判断
       JPasswordField pw = new JPasswordField();
+      pw.setFont(new Font("宋体", Font.PLAIN, 17));
       pw.setEchoChar('*');
-      JOptionPane.showMessageDialog(null, pw, "请输入捺印密码", JOptionPane.PLAIN_MESSAGE);
+      JOptionPane.showMessageDialog(null, pw, "请输入捺印密码：", JOptionPane.PLAIN_MESSAGE);
       char[] pass = pw.getPassword();
       if (pass.length > 0 && pass.length <= 6) {
-        if (String.valueOf(pass).equals("NY2018")) {
+        if (String.valueOf(pass).equals(ny.getPassword())) {
           if (nayin.isSelected()) {
             nayin.setSelected(true);
           } else
@@ -870,7 +1019,6 @@ public class F517DataView {
           nayin.setSelected(true);
       }
     });
-    
     
   }
   /**

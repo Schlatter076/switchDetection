@@ -6,6 +6,8 @@ import java.awt.Font;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.util.ArrayList;
+import java.util.Properties;
+
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -94,7 +96,7 @@ public class UsartTools {
   private JTextField recieveField;
   private int transCount = 0;
   private int recieveCount = 0;
-  private StringBuilder sb = new StringBuilder();
+  
 
   /**
    * 串口调试工具
@@ -671,10 +673,7 @@ public class UsartTools {
     timer1 = new Timer(500, (event) -> {
       if(hasData) {
         hasData = false;
-        sb.append(SerialPortTools.bytesToHex(bytes));
-        sb.append("\r\n");
-        //sb.append(rxBufferField.getText());
-        rxBufferField.setText(sb.toString());
+        rxBufferField.append(SerialPortTools.bytesToHex(bytes) + "\r\n");
         recieveCount += 11;
         recieveField.setText(recieveCount + "");
       }
@@ -691,7 +690,7 @@ public class UsartTools {
     //清空接收缓冲区事件
     clrRxBuffer.addActionListener(e -> {
       rxBufferField.setText("");
-      sb.delete(0, sb.length());
+      
     });
     //清空发送缓冲区事件
     clrTxBuffer.addActionListener(e -> txBufferField.setText(""));

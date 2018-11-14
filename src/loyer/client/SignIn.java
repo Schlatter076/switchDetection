@@ -19,6 +19,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 import loyer.dataBase.ProductData;
 import loyer.dataBase.ProductTools;
@@ -69,6 +71,13 @@ public class SignIn {
    * Initialize the contents of the frame.
    */
   private void initialize() {
+    
+    try {
+      //将界面风格设置成和系统一置
+      UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+    } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+      JOptionPane.showMessageDialog(null, e.getLocalizedMessage());
+    }//*/
     
     frame = new JFrame();
     frame.setTitle("登录");
